@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Ahorcado · Sonda Nasogástrica</title>
+<style>
+  :root{
+    --teal:#4FA8AD; --teal-d:#0E6B63; --teal-l:#CBE5E3; --teal-bg:#E9F4F3;
+    --ink:#183B39; --gray:#5B7B78; --orange:#E2703A; --orange-l:#F3C9B6;
+    --good:#3F9E7E; --cream:#F2F7F6; --white:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; color:var(--ink);
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;
+    background:
+      radial-gradient(circle at 6% 8%, var(--teal-l) 0%, transparent 26%),
+      radial-gradient(circle at 96% 94%, var(--teal-l) 0%, transparent 26%),
+      var(--cream);
+    display:flex; flex-direction:column; align-items:center;
+    padding:24px 14px 56px;
+  }
+  .wrap{width:100%; max-width:720px;}
+  .cross{position:fixed; color:var(--teal); opacity:.25; font-weight:900; user-select:none; pointer-events:none;}
+
+  /* ---- header ---- */
+  header{
+    background:var(--teal-d); border-radius:18px; color:#fff;
+    padding:18px 22px; display:flex; justify-content:space-between; align-items:center;
+    box-shadow:0 8px 24px rgba(14,107,99,.18);
+  }
+  header h1{margin:0; font-size:1.5rem; letter-spacing:1px;}
+  header p{margin:2px 0 0; font-size:.82rem; opacity:.9;}
+  .badge{
+    background:var(--teal); border-radius:30px; padding:8px 16px;
+    font-weight:700; font-size:.85rem; white-space:nowrap;
+  }
+
+  /* ---- progress ---- */
+  .progress{display:flex; gap:5px; margin:14px 2px 0;}
+  .progress span{flex:1; height:7px; border-radius:5px; background:#D7E7E5; transition:background .3s;}
+  .progress span.done-ok{background:var(--good);}
+  .progress span.done-bad{background:var(--orange);}
+  .progress span.current{background:var(--teal);}
+
+  /* ---- card ---- */
+  .card{
+    background:#fff; border-radius:20px; margin-top:14px; padding:22px;
+    box-shadow:0 8px 28px rgba(14,107,99,.12);
+  }
+  .top{display:flex; gap:18px; flex-wrap:wrap; align-items:center;}
+  .gallows{flex:0 0 170px; margin:0 auto;}
+  .gallows svg{width:100%; max-width:180px; display:block; margin:auto;}
+  .err{text-align:center; margin:6px 0 0; font-size:.8rem; font-weight:700; color:var(--gray);}
+  .err.danger{color:#C0562B;}
+  .info{flex:1; min-width:250px;}
+  .cat{
+    display:inline-block; background:var(--teal-bg); color:var(--teal-d);
+    border-radius:8px; padding:4px 12px; font-size:.7rem; font-weight:800;
+    letter-spacing:1px; text-transform:uppercase;
+  }
+  .hint{line-height:1.55; font-size:.95rem; color:#3D5F5C; margin:12px 0 4px;}
+
+  /* ---- word ---- */
+  .word{display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin:20px 0 4px;}
+  .grp{display:flex; gap:6px;}
+  .slot{
+    width:30px; height:42px; border-bottom:3px solid var(--teal);
+    display:flex; align-items:flex-end; justify-content:center; padding-bottom:3px;
+    font-size:1.5rem; font-weight:800; color:var(--teal-d);
+  }
+  .slot.miss{color:#C0562B;}
+  .len{text-align:center; color:var(--gray); font-size:.8rem; margin:2px 0 0;}
+
+  /* ---- keyboard ---- */
+  .keys{display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-top:22px;}
+  .key{
+    width:40px; height:46px; border:none; border-radius:10px; cursor:pointer;
+    font-size:1rem; font-weight:800; background:var(--teal-bg); color:var(--teal-d);
+    transition:transform .08s, background .15s;
+  }
+  .key:hover:not(:disabled){transform:translateY(-2px);}
+  .key:disabled{cursor:default;}
+  .key.hit{background:var(--good); color:#fff;}
+  .key.wrong{background:var(--orange-l); color:#9E4520;}
+
+  /* ---- round message ---- */
+  .msg{margin-top:18px; border-radius:14px; padding:16px; text-align:center; font-weight:700;}
+  .msg.win{background:var(--teal-bg); color:var(--teal-d);}
+  .msg.lose{background:#FBEAE3; color:#9E4520;}
+  .msg small{display:block; font-weight:600; margin-top:4px; opacity:.85;}
+
+  /* ---- buttons ---- */
+  .btn{
+    border:none; border-radius:12px; padding:13px 30px; font-size:1rem;
+    font-weight:700; letter-spacing:.4px; cursor:pointer; color:#fff; background:var(--teal-d);
+    transition:transform .08s, filter .15s; margin-top:12px;
+  }
+  .btn:hover{transform:translateY(-2px); filter:brightness(1.06);}
+  .btn.orange{background:var(--orange);}
+
+  /* ---- start & end screens ---- */
+  .center{text-align:center;}
+  .emoji{font-size:2.6rem;}
+  h2.title{color:var(--teal-d); margin:6px 0 2px; letter-spacing:1px;}
+  .lead{color:var(--teal); font-weight:700; margin:0;}
+  .score-big{font-size:2.4rem; font-weight:800; color:var(--teal-d); margin:6px 0 0;}
+  .score-sub{color:var(--gray); font-weight:600; margin:2px 0 18px;}
+  .review{display:flex; flex-direction:column; gap:8px; margin:16px 0 20px; text-align:left;}
+  .row{
+    display:flex; justify-content:space-between; align-items:center;
+    border-radius:10px; padding:10px 14px; font-weight:600;
+  }
+  .row.ok{background:var(--teal-bg);}
+  .row.bad{background:#FBEAE3;}
+  .row .lbl{font-size:.75rem; color:var(--gray); font-weight:700; text-transform:uppercase;}
+  .foot{color:#6B8987; font-size:.75rem; text-align:center; margin-top:18px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<span class="cross" style="top:120px; left:18px; font-size:26px;">✚</span>
+<span class="cross" style="top:150px; left:44px; font-size:18px;">✚</span>
+<span class="cross" style="bottom:60px; right:26px; font-size:24px;">✚</span>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🩺 EL AHORCADO</h1>
+      <p>Sonda Nasogástrica · Universidad Veracruzana</p>
+    </div>
+    <div class="badge" id="badge">10 preguntas</div>
+  </header>
+
+  <div class="progress" id="progress"></div>
+
+  <!-- ===== INICIO ===== -->
+  <section class="card center" id="startScreen">
+    <div class="emoji">🎯</div>
+    <h2 class="title">Pon a prueba lo que aprendiste</h2>
+    <p class="lead">10 conceptos clave de la sonda nasogástrica</p>
+    <p style="line-height:1.6; color:#3D5F5C; margin:16px 0 4px;">
+      Adivina cada palabra letra por letra usando la pista.
+      Tienes <b>6 intentos</b> por palabra: cada error dibuja una parte del muñeco.
+      Al final obtendrás tu <b>puntuación</b>: hasta <b>10 puntos por palabra</b>,
+      restando 1 punto por cada error cometido.
+    </p>
+    <p style="color:var(--gray); font-size:.85rem;">Puedes usar el teclado de tu dispositivo o los botones en pantalla.</p>
+    <button class="btn" onclick="startGame()">Comenzar ▶</button>
+  </section>
+
+  <!-- ===== JUEGO ===== -->
+  <section class="card hidden" id="gameScreen">
+    <div class="top">
+      <div class="gallows">
+        <svg viewBox="0 0 200 220" id="gallowsSvg"></svg>
+        <p class="err" id="errText">Errores: 0 / 6</p>
+      </div>
+      <div class="info">
+        <span class="cat" id="cat">Categoría</span>
+        <p class="hint" id="hint">Pista…</p>
+      </div>
+    </div>
+
+    <div class="word" id="word"></div>
+    <p class="len" id="len"></p>
+
+    <div class="keys" id="keys"></div>
+
+    <div class="msg hidden" id="roundMsg"></div>
+  </section>
+
+  <!-- ===== FINAL ===== -->
+  <section class="card center hidden" id="endScreen">
+    <div class="emoji" id="endEmoji">🏆</div>
+    <h2 class="title">Resultado final</h2>
+    <p class="score-big" id="scoreBig">0 / 100</p>
+    <p class="score-sub" id="scoreSub"></p>
+    <div class="review" id="review"></div>
+    <p id="verdict" style="line-height:1.5; color:#3D5F5C;"></p>
+    <button class="btn" onclick="startGame()">Jugar de nuevo ↻</button>
+  </section>
+
+  <p class="foot">Basado en la presentación “Sonda Nasogástrica” · Universidad Veracruzana</p>
+</div>
+
+<script>
+/* ---------- Datos ---------- */
+const ROUNDS = [
+  { word:"NASOGÁSTRICA", cat:"Conceptos",
+    hint:"Vía de acceso que atraviesa la nariz, la faringe y el esófago para alcanzar la cámara gástrica." },
+  { word:"EPIGLOTIS", cat:"Anatomía",
+    hint:"Estructura cartilaginosa que cubre la vía aérea al deglutir; aparece junto a la tráquea en el esquema." },
+  { word:"XIFOIDES", cat:"Procedimiento",
+    hint:"Apéndice donde termina la medición: el trazo va de la nariz al lóbulo de la oreja y de ahí a este punto." },
+  { word:"HIDROSOLUBLE", cat:"Material y equipo",
+    hint:"Característica del lubricante que se prefiere sobre el oleoso para evitar complicaciones si pasa a la vía aérea." },
+  { word:"ESTETOSCOPIO", cat:"Comprobación",
+    hint:"Instrumento con el que se ausculta el epigastrio mientras se insufla aire para confirmar la posición gástrica." },
+  { word:"LAVADO GÁSTRICO", cat:"Objetivos",
+    hint:"Procedimiento de limpieza del estómago que es uno de los usos de la sonda." },
+  { word:"DISTENSIÓN GÁSTRICA", cat:"Objetivos",
+    hint:"Acumulación de aire o contenido en el estómago que la sonda ayuda a aliviar por descompresión." },
+  { word:"CÁUSTICOS", cat:"Contraindicaciones",
+    hint:"Su ingestión contraindica la sonda por el elevado riesgo de perforación esofágica." },
+  { word:"ANTIEMÉTICOS", cat:"Contraindicaciones",
+    hint:"Cuando los vómitos son intratables y no ceden con estos fármacos, no debe colocarse la sonda." },
+  { word:"COAGULACIÓN", cat:"Contraindicaciones",
+    hint:"Sus alteraciones aumentan el riesgo de sangrado durante la inserción de la sonda." },
+];
+const MAX_ERR = 6;
+const ALPHABET = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ".split("");
+
+/* ---------- Estado ---------- */
+let idx = 0, guessed = [], errors = 0, results = [];
+
+/* ---------- Utilidades ---------- */
+function norm(ch){
+  // Quita acentos pero conserva la Ñ
+  if(ch === "Ñ") return "Ñ";
+  return ch.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function letters(word){ // letras únicas normalizadas (sin espacios)
+  return word.replace(/ /g,"").split("").map(norm);
+}
+
+/* ---------- Dibujo del ahorcado ---------- */
+function drawGallows(){
+  const svg = document.getElementById("gallowsSvg");
+  const s = 'stroke="#0E6B63" stroke-width="5" stroke-linecap="round" fill="none"';
+  const b = 'stroke="#E2703A" stroke-width="4.5" stroke-linecap="round" fill="none"';
+  let parts = `
+    <line x1="20" y1="205" x2="130" y2="205" ${s}/>
+    <line x1="50" y1="205" x2="50" y2="20" ${s}/>
+    <line x1="50" y1="20" x2="135" y2="20" ${s}/>
+    <line x1="135" y1="20" x2="135" y2="45" ${s}/>`;
+  if(errors>0) parts += `<circle cx="135" cy="63" r="18" ${b}/>`;
+  if(errors>1) parts += `<line x1="135" y1="81" x2="135" y2="135" ${b}/>`;
+  if(errors>2) parts += `<line x1="135" y1="95" x2="110" y2="118" ${b}/>`;
+  if(errors>3) parts += `<line x1="135" y1="95" x2="160" y2="118" ${b}/>`;
+  if(errors>4) parts += `<line x1="135" y1="135" x2="115" y2="170" ${b}/>`;
+  if(errors>5) parts += `<line x1="135" y1="135" x2="155" y2="170" ${b}/>`;
+  if(errors>=MAX_ERR){
+    parts += `<g stroke="#E2703A" stroke-width="2.5">
+      <line x1="128" y1="58" x2="134" y2="64"/><line x1="134" y1="58" x2="128" y2="64"/>
+      <line x1="138" y1="58" x2="144" y2="64"/><line x1="144" y1="58" x2="138" y2="64"/></g>`;
+  }
+  svg.innerHTML = parts;
+}
+
+/* ---------- Barra de progreso ---------- */
+function buildProgress(){
+  const p = document.getElementById("progress");
+  p.innerHTML = "";
+  ROUNDS.forEach((_,i)=>{
+    const sp = document.createElement("span");
+    if(i < results.length) sp.className = results[i].won ? "done-ok" : "done-bad";
+    else if(i === idx) sp.className = "current";
+    p.appendChild(sp);
+  });
+}
+
+/* ---------- Render de una ronda ---------- */
+function renderRound(){
+  const r = ROUNDS[idx];
+  document.getElementById("cat").textContent = r.cat;
+  document.getElementById("hint").textContent = "💡 " + r.hint;
+  document.getElementById("badge").textContent = `Ronda ${idx+1} / ${ROUNDS.length}`;
+
+  // palabra
+  const wc = document.getElementById("word");
+  wc.innerHTML = "";
+  r.word.split(" ").forEach(part=>{
+    const grp = document.createElement("div"); grp.className="grp";
+    part.split("").forEach(ch=>{
+      const slot = document.createElement("div"); slot.className="slot";
+      slot.dataset.letter = norm(ch);
+      slot.dataset.real = ch;
+      grp.appendChild(slot);
+    });
+    wc.appendChild(grp);
+  });
+  const detail = r.word.split(" ").map(w=>w.length);
+  document.getElementById("len").textContent =
+    detail.length>1 ? `(${detail.join(" + ")} letras)` : `(${detail[0]} letras)`;
+
+  // teclado
+  const kb = document.getElementById("keys");
+  kb.innerHTML = "";
+  ALPHABET.forEach(l=>{
+    const k = document.createElement("button");
+    k.className="key"; k.textContent=l; k.dataset.key=l;
+    k.onclick=()=>guess(l);
+    kb.appendChild(k);
+  });
+
+  document.getElementById("roundMsg").className="msg hidden";
+  drawGallows();
+  updateErrText();
+  buildProgress();
+}
+
+function updateErrText(){
+  const t = document.getElementById("errText");
+  t.textContent = `Errores: ${errors} / ${MAX_ERR}`;
+  t.className = errors>=4 ? "err danger" : "err";
+}
+
+/* ---------- Lógica de adivinar ---------- */
+function guess(letter){
+  if(guessed.includes(letter)) return;
+  const r = ROUNDS[idx];
+  const wordLetters = letters(r.word);
+  const over = wordLetters.every(l=>guessed.includes(l)) || errors>=MAX_ERR;
+  if(over) return;
+
+  guessed.push(letter);
+  const key = document.querySelector(`.key[data-key="${letter}"]`);
+  const inWord = wordLetters.includes(letter);
+
+  if(inWord){
+    key.classList.add("hit");
+    document.querySelectorAll(`.slot[data-letter="${letter}"]`).forEach(s=>{
+      s.textContent = s.dataset.real; // muestra con acento si lo tiene
+    });
+  } else {
+    key.classList.add("wrong");
+    errors++;
+    drawGallows();
+    updateErrText();
+  }
+  key.disabled = true;
+
+  const won = wordLetters.every(l=>guessed.includes(l));
+  const lost = errors>=MAX_ERR;
+  if(won || lost) endRound(won);
+}
+
+/* ---------- Fin de ronda ---------- */
+function endRound(won){
+  const r = ROUNDS[idx];
+  const pts = won ? Math.max(0, 10 - errors) : 0;
+  results.push({ word:r.word, cat:r.cat, won, errors, pts });
+
+  // revela palabra completa si se perdió
+  if(!won){
+    document.querySelectorAll("#word .slot").forEach(s=>{
+      if(!s.textContent){ s.textContent = s.dataset.real; s.classList.add("miss"); }
+    });
+  }
+  // deshabilita teclado
+  document.querySelectorAll(".key").forEach(k=>k.disabled=true);
+
+  const m = document.getElementById("roundMsg");
+  m.className = "msg " + (won ? "win" : "lose");
+  const last = idx+1 >= ROUNDS.length;
+  m.innerHTML = won
+    ? `✅ ¡Correcto! Ganaste ${pts} punto${pts===1?"":"s"}.<small>${errors} error${errors===1?"":"es"} en esta palabra.</small>
+       <br><button class="btn" onclick="nextRound()">${last?"Ver resultados 🏁":"Siguiente →"}</button>`
+    : `❌ Se acabaron los intentos. La palabra era: <b>${r.word}</b>.<small>0 puntos en esta palabra.</small>
+       <br><button class="btn orange" onclick="nextRound()">${last?"Ver resultados 🏁":"Siguiente →"}</button>`;
+
+  buildProgress();
+}
+
+function nextRound(){
+  if(idx+1 >= ROUNDS.length){ showEnd(); return; }
+  idx++; guessed=[]; errors=0;
+  renderRound();
+}
+
+/* ---------- Pantalla final ---------- */
+function showEnd(){
+  document.getElementById("gameScreen").classList.add("hidden");
+  const end = document.getElementById("endScreen");
+  end.classList.remove("hidden");
+
+  const solved = results.filter(r=>r.won).length;
+  const total = results.reduce((a,r)=>a+r.pts,0);
+  document.getElementById("scoreBig").textContent = `${total} / 100`;
+  document.getElementById("scoreSub").textContent = `${solved} de ${ROUNDS.length} palabras adivinadas`;
+  document.getElementById("badge").textContent = "Terminado ✓";
+
+  const emoji = total>=85 ? "🏆" : total>=60 ? "💪" : total>=35 ? "📈" : "📖";
+  document.getElementById("endEmoji").textContent = emoji;
+
+  const rev = document.getElementById("review"); rev.innerHTML="";
+  results.forEach((r,i)=>{
+    const row = document.createElement("div");
+    row.className = "row " + (r.won?"ok":"bad");
+    row.innerHTML = `<div><span class="lbl">${i+1}. ${r.cat}</span><br><b>${r.word}</b></div>
+                     <div>${r.won ? `+${r.pts} pts` : "0 pts"} ${r.won?"✅":"❌"}</div>`;
+    rev.appendChild(row);
+  });
+
+  const v = total>=85 ? "¡Excelente! Dominas los conceptos de la sonda nasogástrica."
+          : total>=60 ? "¡Buen trabajo! Repasa las palabras que fallaste para afinar detalles."
+          : total>=35 ? "Vas por buen camino; conviene revisar la presentación otra vez."
+          : "Repasa la presentación con calma y vuelve a intentarlo, ¡lo lograrás!";
+  document.getElementById("verdict").textContent = v;
+
+  buildProgress();
+}
+
+/* ---------- Iniciar ---------- */
+function startGame(){
+  idx=0; guessed=[]; errors=0; results=[];
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("endScreen").classList.add("hidden");
+  document.getElementById("gameScreen").classList.remove("hidden");
+  renderRound();
+}
+
+/* ---------- Teclado físico ---------- */
+document.addEventListener("keydown", e=>{
+  if(document.getElementById("gameScreen").classList.contains("hidden")) return;
+  let ch = e.key.toUpperCase();
+  if(ch==="Ñ" || /^[A-Z]$/.test(ch)) guess(ch);
+});
+
+/* ---------- Init ---------- */
+buildProgress();
+</script>
+</body>
+</html>
